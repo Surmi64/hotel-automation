@@ -1,73 +1,51 @@
-require("dotenv").config();
-const { MongoClient } = require("mongodb");
-const winston = require("winston");
+async function sendCommandToShelly(ip, username, password) {
+  const url = `http://${ip}/rpc`;
 
-const mongoUri = process.env.MONGODB_URI;
-const shelly1PmPlusIp = process.env.SHELLY_1PM_PLUS_IP;
-const shelly1PlusIp = process.env.SHELLY_1_PLUS_IP;
+  // Manually create the Authorization header without using Buffer
+  const auth = `Basic ${btoa(`${username}:${password}`)}`;
 
-const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf(({ timestamp, level, message }) => {
-      return `${timestamp} [${level}]: ${message}`;
-    })
-  ),
-  transports: [
-    new winston.transports.File({ filename: "application.log" }),
-    new winston.transports.Console(),
-  ],
-});
-
-async function getTodayActivationStatus() {
-  const client = new MongoClient(mongoUri);
+  const data = {
+    id: 1,
+    method: "Script.Start",
+    params: {
+      id: 1,
+    },
+  };
 
   try {
-    await client.connect();
-    const db = client.db("hotel-automation");
-    const collection = db.collection("sabee_dates");
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: auth,
+      },
+      body: JSON.stringify(data), // Convert the data object to a JSON string
+    });
 
-    const today = new Date().toISOString().split("T")[0];
-    const doc = await collection.findOne({ date: today });
+    const rawResponse = await response.text();
+    console.log("Raw Response:", rawResponse);
 
-    return doc;
-  } finally {
-    await client.close();
+    const contentType = response.headers.get("content-type");
+    let result;
+
+    if (
+      response.ok &&
+      contentType &&
+      contentType.includes("application/json")
+    ) {
+      result = JSON.parse(rawResponse);
+    } else if (!response.ok) {
+      throw new Error(
+        `Request failed with status ${response.status} and message: ${rawResponse}`
+      );
+    } else {
+      result = rawResponse;
+    }
+
+    console.log(result);
+  } catch (error) {
+    console.error("Error:", error);
   }
 }
 
-async function sendCommandToShelly(ip, command) {
-  const url = `http://${ip}/rpc/${command}`;
-  const response = await fetch(url, { method: "POST" });
-  const data = await response.json();
-  return data;
-}
-
-async function main() {
-  const shouldActivate = await getTodayActivationStatus();
-
-  if (shouldActivate) {
-    logger.info("Activating Shelly devices...");
-
-    try {
-      await sendCommandToShelly(shelly1PmPlusIp, "Script.Start?id=1");
-      logger.info("Shelly 1PM Plus activated.");
-    } catch (error) {
-      logger.error(`Failed to activate Shelly 1PM Plus: ${error}`);
-    }
-
-    try {
-      await sendCommandToShelly(shelly1PlusIp, "Script.Start?id=1");
-      logger.info("Shelly 1 Plus activated.");
-    } catch (error) {
-      logger.error(`Failed to activate Shelly 1 Plus: ${error}`);
-    }
-  } else {
-    logger.info("No activation needed for today.");
-  }
-}
-
-main().catch((error) => {
-  logger.error(`Error in main execution: ${error}`);
-});
+sendCommandToShelly("192.168.68.130", "admin", "stumpfimre"); // Replace with your device IP, username, and password
