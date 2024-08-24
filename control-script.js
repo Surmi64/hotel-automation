@@ -21,20 +21,17 @@ const logger = winston.createLogger({
 });
 
 async function getTodayActivationStatus() {
-  const client = new MongoClient(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  const client = new MongoClient(mongoUri);
 
   try {
     await client.connect();
-    const db = client.db();
-    const collection = db.collection("activation_dates");
+    const db = client.db("hotel-automation");
+    const collection = db.collection("sabee_dates");
 
     const today = new Date().toISOString().split("T")[0];
     const doc = await collection.findOne({ date: today });
 
-    return doc ? doc.activate : false;
+    return doc;
   } finally {
     await client.close();
   }
@@ -54,14 +51,14 @@ async function main() {
     logger.info("Activating Shelly devices...");
 
     try {
-      await sendCommandToShelly(shelly1PmPlusIp, "Script.Start?id=0");
+      await sendCommandToShelly(shelly1PmPlusIp, "Script.Start?id=1");
       logger.info("Shelly 1PM Plus activated.");
     } catch (error) {
       logger.error(`Failed to activate Shelly 1PM Plus: ${error}`);
     }
 
     try {
-      await sendCommandToShelly(shelly1PlusIp, "Script.Start?id=0");
+      await sendCommandToShelly(shelly1PlusIp, "Script.Start?id=1");
       logger.info("Shelly 1 Plus activated.");
     } catch (error) {
       logger.error(`Failed to activate Shelly 1 Plus: ${error}`);
