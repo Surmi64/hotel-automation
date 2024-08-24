@@ -48,4 +48,5 @@ let midnightDelay = (Timer.parse(midnightTime, "HH:MM") - (now % 86400)) * 1000;
 if (midnightDelay < 0) {
   midnightDelay += 86400 * 1000;
 }
+
 Timer.set(midnightDelay, false, turnOffOutput);
