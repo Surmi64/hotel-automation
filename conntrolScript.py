@@ -26,13 +26,13 @@ logger = logging.getLogger()
 def get_today_activation_status():
     client = MongoClient(mongo_uri)
     try:
-        db = client.get_database()
-        collection = db['activation_dates']
+        db = client.get_database('hotel-automation')
+        collection = db['sabee_dates']
         
         today = str(datetime.date.today())
         doc = collection.find_one({'date': today})
         
-        return doc.get('activate', False) if doc else False
+        return doc
     finally:
         client.close()
 
