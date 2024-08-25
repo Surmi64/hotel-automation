@@ -17,7 +17,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s]: %(message)s',
     handlers=[
-        logging.FileHandler("application.log"),
+        logging.FileHandler("/var/shelly-automation/hotel-automation/application.log"),
         logging.StreamHandler()
     ]
 )
@@ -47,8 +47,7 @@ def send_command_to_shelly(ip):
 
 def main():
     should_activate = get_today_activation_status()
-    
-    if should_activate:
+    if should_activate.get("water") & should_activate.get("lights"):
         logger.info("Activating Shelly devices...")
 
         try:
@@ -56,12 +55,11 @@ def main():
             logger.info("Shelly 1PM Plus activated.")
         except Exception as error:
             logger.error(f"Failed to activate Shelly 1PM Plus: {error}")
-
-        try:
-            send_command_to_shelly(shelly1_plus_ip)
-            logger.info("Shelly 1 Plus activated.")
-        except Exception as error:
-            logger.error(f"Failed to activate Shelly 1 Plus: {error}")
+        # try:
+        #     send_command_to_shelly(shelly1_plus_ip)
+        #     logger.info("Shelly 1 Plus activated.")
+        # except Exception as error:
+        #     logger.error(f"Failed to activate Shelly 1 Plus: {error}")
     else:
         logger.info("No activation needed for today.")
 
